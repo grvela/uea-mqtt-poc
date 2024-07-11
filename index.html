@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lâmpada ON/OFF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15%;
+            gap: 15%;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        img {
+            width: 150px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        button {
+            border: none;
+            padding: 10px 20px;
+            color: #333333;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 600px) {
+            img {
+                width: 100px;
+            }
+
+            button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img id="lamp-img" src="./img/lamp_off.jpg" alt="Lâmpada Apagada">
+        <button id="toggle-btn">ON</button>
+    </div>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleBtn = document.getElementById('toggle-btn');
+            const lampImg = document.getElementById('lamp-img');
+
+            toggleBtn.addEventListener('click', () => {
+                if (toggleBtn.textContent === 'ON') {
+                    lampImg.src = 'img/lamp_on.jpg';
+                    toggleBtn.textContent = 'OFF';
+                    sendMqttMessage('ON');
+                } else {
+                    lampImg.src = 'img/lamp_off.jpg';
+                    toggleBtn.textContent = 'ON';
+                    sendMqttMessage('OFF');
+                }
+            });
+        });
+
+        const clientId = 'emqx_test_' + Math.random().toString(16).substring(2, 8);
+        const username = 'mqtt_client';
+        const password = '123qweasd_';
+        const connection = 'wss://ac0c63d3.ala.us-east-1.emqxsl.com:8084/mqtt';
+
+        const client = mqtt.connect(connection, {
+            clientId,
+            username,
+            password,
+        });
+
+        const topic = '/lamp/';
+        const qos = 0;
+
+        client.on('connect', () => {
+            console.log('Cliente conectado:' + clientId);
+            client.subscribe(topic, { qos }, (error) => {
+                if (error) {
+                    console.log('Erro na subscrição:', error);
+                }
+            });
+        });
+
+        client.on('error', (err) => {
+            console.log('Erro de conexão:', err);
+            client.end();
+        });
+
+        client.on('reconnect', () => {
+            console.log('Reconectando...');
+        });
+
+        client.on('message', (topic, payload) => {
+            console.log('Mensagem recebida:', payload.toString());
+        });
+
+        function sendMqttMessage(state) {
+            client.publish(topic, state, { qos }, (error) => {
+                if (error) {
+                  console.error(error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
